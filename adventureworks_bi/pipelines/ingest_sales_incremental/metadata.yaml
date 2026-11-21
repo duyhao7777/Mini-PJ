@@ -1,0 +1,129 @@
+blocks:
+- all_upstream_blocks_executed: true
+  color: null
+  configuration: {}
+  downstream_blocks:
+  - extract_by_window
+  - update_lset_write_log
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: read_etl_control
+  retry_config: null
+  status: executed
+  timeout: null
+  type: data_loader
+  upstream_blocks: []
+  uuid: read_etl_control
+- all_upstream_blocks_executed: true
+  color: null
+  configuration: {}
+  downstream_blocks:
+  - validate_source_rows
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: extract_by_window
+  retry_config: null
+  status: executed
+  timeout: null
+  type: transformer
+  upstream_blocks:
+  - read_etl_control
+  uuid: extract_by_window
+- all_upstream_blocks_executed: true
+  color: null
+  configuration: {}
+  downstream_blocks:
+  - classify_rows
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: validate_source_rows
+  retry_config: null
+  status: executed
+  timeout: null
+  type: transformer
+  upstream_blocks:
+  - extract_by_window
+  uuid: validate_source_rows
+- all_upstream_blocks_executed: true
+  color: null
+  configuration: {}
+  downstream_blocks:
+  - upsert_to_staging
+  - update_lset_write_log
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: classify_rows
+  retry_config: null
+  status: executed
+  timeout: null
+  type: transformer
+  upstream_blocks:
+  - validate_source_rows
+  uuid: classify_rows
+- all_upstream_blocks_executed: true
+  color: null
+  configuration: {}
+  downstream_blocks:
+  - update_lset_write_log
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: upsert_to_staging
+  retry_config: null
+  status: executed
+  timeout: null
+  type: data_exporter
+  upstream_blocks:
+  - classify_rows
+  uuid: upsert_to_staging
+- all_upstream_blocks_executed: true
+  color: pink
+  configuration: {}
+  downstream_blocks: []
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: update_lset_write_log
+  retry_config: null
+  status: executed
+  timeout: null
+  type: custom
+  upstream_blocks:
+  - upsert_to_staging
+  - read_etl_control
+  - classify_rows
+  uuid: update_lset_write_log
+cache_block_output_in_memory: false
+callbacks: []
+concurrency_config: {}
+conditionals: []
+created_at: '2026-10-24 08:39:58.136569+00:00'
+data_integration: null
+description: null
+executor_config: {}
+executor_count: 1
+executor_type: null
+extensions: {}
+name: ingest_sales_incremental
+notification_config: {}
+remote_variables_dir: null
+retry_config: {}
+run_pipeline_in_one_process: false
+settings:
+  triggers: null
+spark_config: {}
+tags: []
+type: python
+uuid: ingest_sales_incremental
+variables_dir: /home/src/mage_data/adventureworks_bi
+widgets: []

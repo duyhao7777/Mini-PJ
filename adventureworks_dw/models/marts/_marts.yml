@@ -1,0 +1,171 @@
+version: 2
+
+models:
+  - name: dim_date
+    description: "Dimension thời gian, mỗi dòng là một ngày từ 01/01/2020 đến 30/06/2022, sinh từ bảng Calendar."
+    columns:
+      - name: date_key
+        description: "Khoá dạng số nguyên yyyymmdd."
+        data_tests:
+          - unique
+          - not_null
+      - name: full_date
+        description: "Ngày đầy đủ (kiểu date)."
+        data_tests:
+          - unique
+          - not_null
+
+  - name: dim_product
+    description: "Dimension sản phẩm, đã gộp phân loại con và danh mục vào cùng bảng (Star Schema)."
+    columns:
+      - name: product_key
+        description: "Khoá sản phẩm lấy từ nguồn."
+        data_tests:
+          - unique
+          - not_null
+      - name: product_price
+        description: "Giá niêm yết, dùng để tính doanh thu."
+        data_tests:
+          - not_null
+      - name: product_cost
+        description: "Giá vốn, dùng để tính chi phí và lợi nhuận."
+        data_tests:
+          - not_null
+      - name: category_name
+        description: "Tên danh mục sản phẩm."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['Bikes', 'Components', 'Clothing', 'Accessories']
+
+  - name: dim_customer
+    description: "Dimension khách hàng, đã loại 6 dòng rác và chuẩn hoá các giá trị phân loại."
+    columns:
+      - name: customer_key
+        description: "Khoá khách hàng lấy từ nguồn."
+        data_tests:
+          - unique
+          - not_null
+      - name: gender
+        description: "Giới tính, Unknown khi nguồn bị thiếu."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['Male', 'Female', 'Unknown']
+      - name: marital_status
+        description: "Tình trạng hôn nhân."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['Married', 'Single']
+      - name: home_owner
+        description: "Có sở hữu nhà hay không."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['Yes', 'No']
+      - name: age
+        description: "Tuổi tính tại ngày tham chiếu 30/06/2022."
+
+  - name: dim_territory
+    description: "Dimension vùng bán hàng (10 vùng, 6 quốc gia)."
+    columns:
+      - name: territory_key
+        description: "Khoá vùng bán hàng lấy từ nguồn."
+        data_tests:
+          - unique
+          - not_null
+
+  - name: fact_sales
+    description: "Fact bán hàng. Grain: một dòng đơn hàng (order_number + order_line_item). Doanh thu = số lượng x giá niêm yết."
+    columns:
+      - name: sales_line_id
+        description: "Khoá duy nhất của dòng đơn hàng (order_number-order_line_item)."
+        data_tests:
+          - unique
+          - not_null
+      - name: order_date_key
+        description: "Khoá ngoại tới dim_date theo ngày đặt hàng."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: product_key
+        description: "Khoá ngoại tới dim_product."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_product')
+                field: product_key
+      - name: customer_key
+        description: "Khoá ngoại tới dim_customer."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customer')
+                field: customer_key
+      - name: territory_key
+        description: "Khoá ngoại tới dim_territory."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_territory')
+                field: territory_key
+      - name: order_quantity
+        description: "Số lượng sản phẩm của dòng đơn hàng."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3]
+                quote: false
+      - name: sales_amount
+        description: "Doanh thu = order_quantity x product_price."
+        data_tests:
+          - not_null
+      - name: profit_amount
+        description: "Lợi nhuận = doanh thu trừ chi phí."
+      - name: days_in_stock
+        description: "Số ngày từ ngày nhập kho đến ngày đặt hàng."
+
+  - name: fact_returns
+    description: "Fact trả hàng. Grain: một dòng trong file Returns (ngày trả, sản phẩm, vùng bán hàng)."
+    columns:
+      - name: return_id
+        description: "Khoá duy nhất của dòng trả hàng."
+        data_tests:
+          - unique
+          - not_null
+      - name: return_date_key
+        description: "Khoá ngoại tới dim_date theo ngày trả hàng."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: product_key
+        description: "Khoá ngoại tới dim_product."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_product')
+                field: product_key
+      - name: territory_key
+        description: "Khoá ngoại tới dim_territory."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_territory')
+                field: territory_key
+      - name: return_quantity
+        description: "Số lượng sản phẩm bị trả."
+        data_tests:
+          - not_null

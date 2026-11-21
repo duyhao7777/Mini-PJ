@@ -1,0 +1,23 @@
+# Local credentials and environment files
+.env
+.env.*
+!.env.example
+mage_data/
+**/.user.yml
+**/.ssh_tunnel/
+
+# Generated artifacts and caches
+.venv/
+__pycache__/
+*.py[cod]
+*.db
+*.parquet
+*.log
+logs/
+target/
+dbt_packages/
+.cache/
+.operation_history/
+
+# Local archive may contain credentials or generated files
+*.rar

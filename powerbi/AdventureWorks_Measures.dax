@@ -1,0 +1,98 @@
+/* =====================================================================
+   AdventureWorks_Measures.dax
+   Các measure DAX cho mô hình AdventureWorks_BI.pbix (giai đoạn 2)
+
+   CÁCH DÙNG (DAX query view):
+   1. Trong Power BI Desktop, bấm biểu tượng "DAX query view" ở thanh dọc bên trái
+      (biểu tượng thứ tư, có chữ DAX).
+   2. Dán TOÀN BỘ nội dung từ dòng "DEFINE" xuống hết file vào cửa sổ truy vấn.
+   3. Bấm "Run": kết quả ở dưới là MỘT dòng chứa giá trị của tất cả measure,
+      đối chiếu với bảng "GIÁ TRỊ KỲ VỌNG" ở cuối file.
+   4. Nếu đúng, bấm "Update model: Add new measure" (CodeLens hiện phía trên
+      mỗi dòng MEASURE) cho từng measure. Nếu giao diện có nút cập nhật tất cả
+      thì bấm một lần cho tất cả.
+
+   LƯU Ý: giữ NGUYÊN tên bảng 'dw fact_sales', 'dw fact_returns', 'dw dim_date'
+   (đừng đổi tên bảng trước khi chạy script). Bảng 'dw dim_date' phải được
+   đánh dấu là bảng ngày (Mark as date table, cột full_date).
+   ===================================================================== */
+
+DEFINE
+    -- ---------- Doanh thu, chi phí, lợi nhuận ----------
+    MEASURE 'dw fact_sales'[Total Sales]  = SUM('dw fact_sales'[sales_amount])
+    MEASURE 'dw fact_sales'[Total Cost]   = SUM('dw fact_sales'[cost_amount])
+    MEASURE 'dw fact_sales'[Total Profit] = SUM('dw fact_sales'[profit_amount])
+    MEASURE 'dw fact_sales'[Profit Margin %] = DIVIDE([Total Profit], [Total Sales])
+
+    -- ---------- Đơn hàng, số lượng, khách hàng ----------
+    MEASURE 'dw fact_sales'[Order Count]   = DISTINCTCOUNT('dw fact_sales'[order_number])
+    MEASURE 'dw fact_sales'[Quantity Sold] = SUM('dw fact_sales'[order_quantity])
+    MEASURE 'dw fact_sales'[Avg Order Value] = DIVIDE([Total Sales], [Order Count])
+    MEASURE 'dw fact_sales'[Lines per Order] = DIVIDE(COUNTROWS('dw fact_sales'), [Order Count])
+    MEASURE 'dw fact_sales'[Customer Count]  = DISTINCTCOUNT('dw fact_sales'[customer_key])
+    MEASURE 'dw fact_sales'[Sales per Customer] = DIVIDE([Total Sales], [Customer Count])
+    MEASURE 'dw fact_sales'[Repeat Customers] =
+        COUNTROWS(
+            FILTER(
+                VALUES('dw fact_sales'[customer_key]),
+                CALCULATE(DISTINCTCOUNT('dw fact_sales'[order_number])) > 1
+            )
+        )
+    MEASURE 'dw fact_sales'[Repeat Customer %] = DIVIDE([Repeat Customers], [Customer Count])
+    MEASURE 'dw fact_sales'[Avg Days in Stock] = AVERAGE('dw fact_sales'[days_in_stock])
+
+    -- ---------- Trả hàng ----------
+    MEASURE 'dw fact_sales'[Return Quantity] = SUM('dw fact_returns'[return_quantity])
+    MEASURE 'dw fact_sales'[Return Rate %]   = DIVIDE([Return Quantity], [Quantity Sold])
+
+    -- ---------- Thời gian: cùng kỳ năm trước, tháng trước, lũy kế năm ----------
+    MEASURE 'dw fact_sales'[Sales PY] =
+        CALCULATE([Total Sales], SAMEPERIODLASTYEAR('dw dim_date'[full_date]))
+    MEASURE 'dw fact_sales'[Sales YoY %] = DIVIDE([Total Sales] - [Sales PY], [Sales PY])
+    MEASURE 'dw fact_sales'[Sales PM] =
+        CALCULATE([Total Sales], DATEADD('dw dim_date'[full_date], -1, MONTH))
+    MEASURE 'dw fact_sales'[Sales MoM %] = DIVIDE([Total Sales] - [Sales PM], [Sales PM])
+    MEASURE 'dw fact_sales'[Sales YTD] = TOTALYTD([Total Sales], 'dw dim_date'[full_date])
+
+    -- ---------- Tỷ trọng trong ngữ cảnh đang chọn ----------
+    MEASURE 'dw fact_sales'[Sales % of Total] =
+        DIVIDE([Total Sales], CALCULATE([Total Sales], ALLSELECTED()))
+    MEASURE 'dw fact_sales'[Profit % of Total] =
+        DIVIDE([Total Profit], CALCULATE([Total Profit], ALLSELECTED()))
+
+EVALUATE
+ROW(
+    "Total Sales", [Total Sales],
+    "Total Cost", [Total Cost],
+    "Total Profit", [Total Profit],
+    "Profit Margin %", [Profit Margin %],
+    "Order Count", [Order Count],
+    "Quantity Sold", [Quantity Sold],
+    "Avg Order Value", [Avg Order Value],
+    "Lines per Order", [Lines per Order],
+    "Customer Count", [Customer Count],
+    "Sales per Customer", [Sales per Customer],
+    "Repeat Customers", [Repeat Customers],
+    "Repeat Customer %", [Repeat Customer %],
+    "Avg Days in Stock", [Avg Days in Stock],
+    "Return Quantity", [Return Quantity],
+    "Return Rate %", [Return Rate %],
+    "Sales YTD (cuối dữ liệu)", [Sales YTD]
+)
+
+/* =====================================================================
+   GIÁ TRỊ KỲ VỌNG (theo dữ liệu đã kiểm chứng ở giai đoạn 1)
+   Total Sales        36,597,335.82
+   Total Cost         19,642,324.39
+   Total Profit       16,955,011.43
+   Profit Margin %    khoảng 46.3%
+   Order Count        25,164
+   Quantity Sold      84,174
+   Avg Order Value    khoảng 1,454
+   Lines per Order    khoảng 2.23
+   Customer Count     17,416
+   Return Quantity    2,308
+   Return Rate %      khoảng 2.74%
+   Avg Days in Stock  khoảng 67 (theo khám phá ban đầu)
+   Repeat Customers   khoảng 5,857 (theo khám phá ban đầu, cần đối chiếu)
+   ===================================================================== */

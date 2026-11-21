@@ -1,0 +1,17 @@
+version: 2
+
+sources:
+  - name: stg
+    description: "Dữ liệu thô do Mage.ai nạp vào schema stg"
+    database: BI_AdventureWorks
+    schema: stg
+    tables:
+      - name: sales
+      - name: sales_raw
+      - name: customer
+      - name: product
+      - name: product_subcategory
+      - name: product_category
+      - name: territory
+      - name: returns_data
+      - name: calendar

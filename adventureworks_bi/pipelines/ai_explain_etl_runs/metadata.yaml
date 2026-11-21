@@ -1,0 +1,91 @@
+blocks:
+- all_upstream_blocks_executed: true
+  color: null
+  configuration: {}
+  downstream_blocks:
+  - build_ai_prompts
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: load_unexplained_runs
+  retry_config: null
+  status: executed
+  timeout: null
+  type: data_loader
+  upstream_blocks: []
+  uuid: load_unexplained_runs
+- all_upstream_blocks_executed: true
+  color: null
+  configuration: {}
+  downstream_blocks:
+  - call_llm_explain
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: build_ai_prompts
+  retry_config: null
+  status: executed
+  timeout: null
+  type: transformer
+  upstream_blocks:
+  - load_unexplained_runs
+  uuid: build_ai_prompts
+- all_upstream_blocks_executed: true
+  color: null
+  configuration: {}
+  downstream_blocks:
+  - save_ai_summaries
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: call_llm_explain
+  retry_config: null
+  status: executed
+  timeout: null
+  type: transformer
+  upstream_blocks:
+  - build_ai_prompts
+  uuid: call_llm_explain
+- all_upstream_blocks_executed: true
+  color: null
+  configuration: {}
+  downstream_blocks: []
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: save_ai_summaries
+  retry_config: null
+  status: executed
+  timeout: null
+  type: data_exporter
+  upstream_blocks:
+  - call_llm_explain
+  uuid: save_ai_summaries
+cache_block_output_in_memory: false
+callbacks: []
+concurrency_config: {}
+conditionals: []
+created_at: '2026-11-20 11:23:29.073697+00:00'
+data_integration: null
+description: null
+executor_config: {}
+executor_count: 1
+executor_type: null
+extensions: {}
+name: ai_explain_etl_runs
+notification_config: {}
+remote_variables_dir: null
+retry_config: {}
+run_pipeline_in_one_process: false
+settings:
+  triggers: null
+spark_config: {}
+tags: []
+type: python
+uuid: ai_explain_etl_runs
+variables_dir: /home/src/mage_data/adventureworks_bi
+widgets: []
