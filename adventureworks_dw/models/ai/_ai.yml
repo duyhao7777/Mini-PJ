@@ -1,0 +1,28 @@
+version: 2
+models:
+  - name: kpi_monthly
+    description: "KPI theo tháng từ fact_sales: Sales, Profit, Orders, Units, AOV, MoM/YoY. NULL khi không có kỳ so sánh."
+    columns:
+      - name: month_start
+        data_tests: [unique, not_null]
+      - name: sales_amount
+        data_tests: [not_null]
+      - name: order_count
+        data_tests: [not_null]
+      - name: profit_amount
+        data_tests: [not_null]
+  - name: kpi_by_dim
+    description: "KPI theo tháng x loại chiều x khóa chiều; không cộng gộp các dimension_type khác nhau."
+    columns:
+      - name: month_start
+        data_tests: [not_null]
+      - name: dimension_type
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [CATEGORY, TERRITORY, PRODUCT]
+      - name: dimension_key
+        data_tests: [not_null]
+      - name: sales_amount
+        data_tests: [not_null]
