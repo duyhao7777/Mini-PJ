@@ -64,9 +64,9 @@ default:
   MSSQL_DATABASE: BI_AdventureWorks
   MSSQL_SCHEMA: stg
   MSSQL_DRIVER: "ODBC Driver 18 for SQL Server"
-  MSSQL_HOST: "tcp:host.docker.internal,14333"
+  MSSQL_HOST: host.docker.internal
   MSSQL_PASSWORD: "{{ env_var('MSSQL_PASSWORD') }}"
-  MSSQL_PORT: 14333
+  MSSQL_PORT: 1433
   MSSQL_USER: SA
   # MySQL
   MYSQL_DATABASE: database

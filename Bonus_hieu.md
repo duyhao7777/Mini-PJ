@@ -94,7 +94,7 @@ Theo phân công trong dự án BI AdventureWorks, vai trò của bạn là hoà
 ## 3. HƯỚNG DẪN CHI TIẾT QUY TRÌNH CHẠY CHƯƠNG TRÌNH (END-TO-END)
 
 ### Bước 1: Khởi tạo database và cấu trúc log
-1. Mở SSMS hoặc DBeaver, kết nối đến SQL Server (`localhost,14333`, tài khoản `sa`).
+1. Mở SSMS hoặc DBeaver, kết nối đến SQL Server (`localhost,1433`, tài khoản `sa`).
 2. Mở file `sql/05_create_pipeline_run_detail.sql` và nhấn **F5 (Execute)** để tạo bảng `etl.pipeline_run_detail` và nạp dữ liệu lịch sử.
 
 ### Bước 2: Khởi động hệ thống với Docker Compose
@@ -138,7 +138,7 @@ Script sẽ tự động gọi chuỗi 4 bước, in ra tiến độ chi tiết 
 1. **Khởi động**: Mở file `powerbi/AdventureWorks_BI_Dashboard.pbix` bằng Power BI Desktop.
 2. **Nạp 3 bảng Metadata**:
    - Chọn **Get Data** $\rightarrow$ **SQL Server**.
-   - Server: `localhost,14333`, Database: `BI_AdventureWorks`.
+   - Server: `localhost,1433`, Database: `BI_AdventureWorks`.
    - Đánh dấu chọn: `etl.pipeline_run_log`, `etl.pipeline_run_detail`, `etl.run_ai_summary`. Bấm **Load**.
 3. **Tạo mối quan hệ (Model View)**:
    - Kéo `pipeline_run_log[run_id]` nối tới `pipeline_run_detail[run_id]` (Quan hệ `1 - *`).
