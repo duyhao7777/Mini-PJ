@@ -5,7 +5,7 @@
          type: sqlserver
          driver: 'ODBC Driver 18 for SQL Server'
          server: localhost
-         port: 1433
+         port: 14333
          database: BI_AdventureWorks
          schema: dw
          user: sa

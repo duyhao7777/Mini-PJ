@@ -1,0 +1,33 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${MSSQL_PASSWORD:-YourStrongPassword123!}"
+    ports:
+      - "14333:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+
+  mage:
+    image: mageai/mageai:latest
+    container_name: mage
+    restart: unless-stopped
+    command: /app/run_app.sh mage start adventureworks_bi
+    environment:
+      MSSQL_PASSWORD: "${MSSQL_PASSWORD:-YourStrongPassword123!}"
+      MAGE_TIMEZONE: "Asia/Ho_Chi_Minh"
+      TZ: "Asia/Ho_Chi_Minh"
+    ports:
+      - "6789:6789"
+    volumes:
+      - .:/home/src
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - sqlserver
+
+volumes:
+  sqlserver_data:

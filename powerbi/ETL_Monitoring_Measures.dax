@@ -1,0 +1,78 @@
+/* =====================================================================
+   ETL_Monitoring_Measures.dax
+   Các Measure DAX phục vụ cho trang "ETL Monitoring" và "AI Insights"
+   trên Power BI (bổ sung vào Semantic Model liên kết qua run_id)
+
+   CÁCH DÙNG (DAX query view trong Power BI Desktop):
+   1. Bấm vào biểu tượng "DAX query view" ở thanh dọc bên trái Power BI Desktop.
+   2. Dán TOÀN BỘ nội dung file này vào cửa sổ truy vấn và bấm "Run" để kiểm tra.
+   3. Bấm "Update model: Add new measure" ở CodeLens phía trên từng measure.
+   ===================================================================== */
+
+DEFINE
+    -- ---------- 1. KPIs Tổng quan lần chạy ----------
+    MEASURE 'etl pipeline_run_log'[Total Runs] = 
+        COUNTROWS('etl pipeline_run_log')
+
+    MEASURE 'etl pipeline_run_log'[Success Runs] = 
+        CALCULATE(
+            COUNTROWS('etl pipeline_run_log'),
+            'etl pipeline_run_log'[status] = "SUCCESS"
+        )
+
+    MEASURE 'etl pipeline_run_log'[Failed Runs] = 
+        CALCULATE(
+            COUNTROWS('etl pipeline_run_log'),
+            'etl pipeline_run_log'[status] = "FAILED"
+        )
+
+    MEASURE 'etl pipeline_run_log'[Success Rate %] = 
+        DIVIDE([Success Runs], [Total Runs], 0)
+
+    MEASURE 'etl pipeline_run_log'[Avg Duration (Seconds)] = 
+        AVERAGEX(
+            'etl pipeline_run_log',
+            DATEDIFF('etl pipeline_run_log'[started_at], 'etl pipeline_run_log'[finished_at], SECOND)
+        )
+
+    MEASURE 'etl pipeline_run_log'[Avg Duration (Minutes)] = 
+        DIVIDE([Avg Duration (Seconds)], 60, 0)
+
+    -- ---------- 2. Các chỉ số dòng dữ liệu (Rows) ----------
+    MEASURE 'etl pipeline_run_log'[Total Read] = 
+        SUM('etl pipeline_run_log'[rows_read])
+
+    MEASURE 'etl pipeline_run_log'[Total Loaded] = 
+        SUM('etl pipeline_run_log'[rows_loaded])
+
+    MEASURE 'etl pipeline_run_detail'[Total Inserted] = 
+        SUM('etl pipeline_run_detail'[rows_inserted])
+
+    MEASURE 'etl pipeline_run_detail'[Total Updated] = 
+        SUM('etl pipeline_run_detail'[rows_updated])
+
+    MEASURE 'etl pipeline_run_detail'[Total Deleted] = 
+        SUM('etl pipeline_run_detail'[rows_deleted])
+
+    MEASURE 'etl pipeline_run_detail'[Total Rejected] = 
+        SUM('etl pipeline_run_detail'[rows_rejected])
+
+    MEASURE 'etl pipeline_run_detail'[Rejection Rate %] = 
+        DIVIDE([Total Rejected], [Total Read], 0)
+
+    -- ---------- 3. Đo lường hỗ trợ hiển thị AI Insights ----------
+    MEASURE 'etl run_ai_summary'[Selected AI Summary] = 
+        SELECTEDVALUE('etl run_ai_summary'[summary_text], "Chưa có nhận định AI cho lần chạy này hoặc chọn 1 run_id để xem chi tiết.")
+
+EVALUATE
+ROW(
+    "Total Runs", [Total Runs],
+    "Success Runs", [Success Runs],
+    "Failed Runs", [Failed Runs],
+    "Success Rate %", [Success Rate %],
+    "Avg Duration (Sec)", [Avg Duration (Seconds)],
+    "Total Inserted", [Total Inserted],
+    "Total Updated", [Total Updated],
+    "Total Deleted", [Total Deleted],
+    "Total Rejected", [Total Rejected]
+)

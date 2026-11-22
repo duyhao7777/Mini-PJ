@@ -1,0 +1,29 @@
+# Triggers configuration for Mage.ai
+# Múi giờ hệ thống: Asia/Ho_Chi_Minh (UTC+7) - được cấu hình trong compose.yaml và Mage settings.
+
+etl_master:
+  - name: etl_master_demo_10min
+    pipeline_uuid: etl_master
+    schedule_type: time
+    schedule_interval: "*/10 * * * *"  # 10 phút một lần cho demo
+    start_time: "2026-11-22 00:00:00"
+    status: active
+    settings:
+      retry_config:
+        retries: 3
+        delay: 60
+        max_delay: 300
+        exponential_backoff: true
+
+  - name: etl_master_daily_prod
+    pipeline_uuid: etl_master
+    schedule_type: time
+    schedule_interval: "0 2 * * *"     # 02:00 sáng hằng ngày cho môi trường thực tế
+    start_time: "2026-11-22 00:00:00"
+    status: inactive                   # Bật active khi chuyển sang vận hành thực tế
+    settings:
+      retry_config:
+        retries: 3
+        delay: 60
+        max_delay: 300
+        exponential_backoff: true

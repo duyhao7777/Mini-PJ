@@ -14,8 +14,12 @@ def read_etl_control(*args, **kwargs):
     started_at = datetime.utcnow()
     run_id = new_run_id(started_at)
     lset_text = None
+    load_type = 'INCREMENTAL'  # Mặc định an toàn, không bao giờ dùng UNKNOWN
     try:
         with get_connection() as loader:
+            oid_df = loader.load("SELECT OBJECT_ID('stg.sales', 'U') AS oid")
+            has_sales_table = pd.notna(oid_df['oid'].iloc[0]) if not oid_df.empty else False
+
             ctl = loader.load(
                 "SELECT lset, cet_override FROM etl.etl_control "
                 f"WHERE source_name = '{SOURCE_KEY}'"
@@ -25,6 +29,10 @@ def read_etl_control(*args, **kwargs):
 
         lset = pd.Timestamp(ctl['lset'].iloc[0]).normalize()
         lset_text = lset.strftime('%Y-%m-%d')
+        
+        # Xác định load_type sớm: nếu chưa có bảng stg.sales hoặc LSET <= 1900-01-01 thì là FULL
+        load_type = 'FULL' if (not has_sales_table or lset <= pd.Timestamp('1900-01-01')) else 'INCREMENTAL'
+
         override = ctl['cet_override'].iloc[0]
         if pd.notna(override):
             cet = pd.Timestamp(override).normalize()
@@ -35,12 +43,12 @@ def read_etl_control(*args, **kwargs):
             cet_source = 'ngày lớn nhất của nguồn'
     except Exception as e:
         try:
-            write_log(run_id, 'UNKNOWN', 'FAILED', lset=lset_text, error=e, started_at=started_at)
+            # Ghi nhận log FAILED với đúng load_type đã xác định, không ghi UNKNOWN
+            write_log(run_id, load_type, 'FAILED', lset=lset_text, error=e, started_at=started_at)
         except Exception:
             pass   # nếu chính database lỗi thì không ghi log được, vẫn báo lỗi gốc
         raise
 
-    load_type = 'FULL' if lset <= pd.Timestamp('1900-01-01') else 'INCREMENTAL'
     print(f'{run_id} ({load_type}): LSET = {lset.date()}, CET = {cet.date()} ({cet_source})')
     return pd.DataFrame([{
         'run_id': run_id,

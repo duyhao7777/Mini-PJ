@@ -1,0 +1,109 @@
+blocks:
+- all_upstream_blocks_executed: true
+  color: blue
+  configuration: {}
+  downstream_blocks:
+  - master_step2_dbt_run
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: master_step1_sales
+  retry_config:
+    delay: 30
+    exponential_backoff: false
+    max_delay: 120
+    retries: 2
+  status: not_executed
+  timeout: null
+  type: custom
+  upstream_blocks: []
+  uuid: master_step1_sales
+- all_upstream_blocks_executed: true
+  color: teal
+  configuration: {}
+  downstream_blocks:
+  - master_step3_dbt_test
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: master_step2_dbt_run
+  retry_config:
+    delay: 30
+    exponential_backoff: false
+    max_delay: 120
+    retries: 2
+  status: not_executed
+  timeout: null
+  type: custom
+  upstream_blocks:
+  - master_step1_sales
+  uuid: master_step2_dbt_run
+- all_upstream_blocks_executed: true
+  color: yellow
+  configuration: {}
+  downstream_blocks:
+  - master_step4_ai_explain
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: master_step3_dbt_test
+  retry_config: null
+  status: not_executed
+  timeout: null
+  type: custom
+  upstream_blocks:
+  - master_step2_dbt_run
+  uuid: master_step3_dbt_test
+- all_upstream_blocks_executed: true
+  color: purple
+  configuration: {}
+  downstream_blocks: []
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: master_step4_ai_explain
+  retry_config:
+    delay: 30
+    exponential_backoff: false
+    max_delay: 120
+    retries: 2
+  status: not_executed
+  timeout: null
+  type: custom
+  upstream_blocks:
+  - master_step3_dbt_test
+  uuid: master_step4_ai_explain
+cache_block_output_in_memory: false
+callbacks: []
+concurrency_config: {}
+conditionals: []
+created_at: '2026-11-22 00:00:00.000000+00:00'
+data_integration: null
+description: 'Pipeline tổng điều phối: Ingestion -> dbt run -> dbt test -> AI explain (Fail-Fast)'
+executor_config: {}
+executor_count: 1
+executor_type: null
+extensions: {}
+name: etl_master
+notification_config: {}
+remote_variables_dir: null
+retry_config:
+  delay: 60
+  exponential_backoff: true
+  max_delay: 300
+  retries: 3
+run_pipeline_in_one_process: false
+settings:
+  triggers: null
+spark_config: {}
+tags:
+- master
+- production
+type: python
+uuid: etl_master
+variables_dir: /home/src/mage_data/adventureworks_bi
+widgets: []

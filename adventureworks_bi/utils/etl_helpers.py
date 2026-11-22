@@ -59,21 +59,104 @@ def _date_sql(value):
 
 def write_log(batch_id, load_type, status, lset=None, cet=None,
               rows_read=0, rows_inserted=0, rows_updated=0, rows_unchanged=0,
-              rows_rejected=0, error=None, started_at=None):
+              rows_rejected=0, rows_deleted=0, error=None, started_at=None,
+              pipeline_name=None, step_name=None):
+    """
+    Ghi log vào etl.pipeline_run_log và etl.pipeline_run_detail.
+    Tuyệt đối không để load_type = 'UNKNOWN' khi có lỗi.
+    Trả về run_id (int) được sinh tự động.
+    """
     started_at = started_at or datetime.utcnow()
+    finished_at = datetime.utcnow()
+    pipe_name = pipeline_name or PIPELINE_NAME
+    
+    # Chuẩn hoá load_type: không bao giờ ghi UNKNOWN
+    if not load_type or str(load_type).upper() == 'UNKNOWN':
+        if lset and str(lset)[:10] <= '1900-01-01':
+            load_type = 'FULL'
+        else:
+            load_type = 'INCREMENTAL'
+    else:
+        load_type = str(load_type).upper()
+
     err = 'NULL'
     if error:
         err = "'" + str(error).replace("'", "''")[:900] + "'"
+
     sql = f"""
         INSERT INTO etl.pipeline_run_log
         (pipeline_name, load_type, batch_id, batch_start, batch_end, status,
          rows_read, rows_loaded, rows_rejected,
-         rows_inserted, rows_updated, rows_unchanged, error_message, started_at)
-        VALUES ('{PIPELINE_NAME}', '{load_type}', '{batch_id}',
+         rows_inserted, rows_updated, rows_unchanged, error_message, started_at, finished_at)
+        VALUES ('{pipe_name}', '{load_type}', '{batch_id}',
                 {_date_sql(lset)}, {_date_sql(cet)}, '{status}',
                 {rows_read}, {rows_inserted + rows_updated}, {rows_rejected},
                 {rows_inserted}, {rows_updated}, {rows_unchanged}, {err},
-                '{started_at:%Y-%m-%d %H:%M:%S}')
+                '{started_at:%Y-%m-%d %H:%M:%S}', '{finished_at:%Y-%m-%d %H:%M:%S}');
+        SELECT SCOPE_IDENTITY() AS run_id;
+    """
+    run_id = None
+    with get_connection() as loader:
+        try:
+            res = loader.load(sql)
+            if not res.empty and res['run_id'].iloc[0] is not None:
+                run_id = int(res['run_id'].iloc[0])
+        except Exception:
+            # Fallback nếu execute nhiều lệnh không trả recordset
+            loader.execute(f"""
+                INSERT INTO etl.pipeline_run_log
+                (pipeline_name, load_type, batch_id, batch_start, batch_end, status,
+                 rows_read, rows_loaded, rows_rejected,
+                 rows_inserted, rows_updated, rows_unchanged, error_message, started_at, finished_at)
+                VALUES ('{pipe_name}', '{load_type}', '{batch_id}',
+                        {_date_sql(lset)}, {_date_sql(cet)}, '{status}',
+                        {rows_read}, {rows_inserted + rows_updated}, {rows_rejected},
+                        {rows_inserted}, {rows_updated}, {rows_unchanged}, {err},
+                        '{started_at:%Y-%m-%d %H:%M:%S}', '{finished_at:%Y-%m-%d %H:%M:%S}')
+            """)
+            loader.commit()
+            id_res = loader.load("SELECT IDENT_CURRENT('etl.pipeline_run_log') AS run_id")
+            if not id_res.empty and id_res['run_id'].iloc[0] is not None:
+                run_id = int(id_res['run_id'].iloc[0])
+
+        # Ghi đồng thời vào bảng etl.pipeline_run_detail nếu bảng đã tồn tại
+        if run_id:
+            try:
+                detail_sql = f"""
+                    IF OBJECT_ID('etl.pipeline_run_detail', 'U') IS NOT NULL
+                    INSERT INTO etl.pipeline_run_detail
+                    (run_id, step_name, table_name, rows_inserted, rows_updated, rows_deleted, rows_rejected, status, error_message, started_at, finished_at)
+                    VALUES ({run_id}, '{step_name or pipe_name}', 'stg.sales',
+                            {rows_inserted}, {rows_updated}, {rows_deleted}, {rows_rejected},
+                            '{status}', {err}, '{started_at:%Y-%m-%d %H:%M:%S}', '{finished_at:%Y-%m-%d %H:%M:%S}')
+                """
+                loader.execute(detail_sql)
+                loader.commit()
+            except Exception as e_detail:
+                print(f"Lưu chi tiết log cảnh báo: {e_detail}")
+
+    return run_id
+
+
+def write_run_detail(run_id, step_name, table_name='stg.sales',
+                     rows_inserted=0, rows_updated=0, rows_deleted=0, rows_rejected=0,
+                     status='SUCCESS', error=None, started_at=None, finished_at=None):
+    """
+    Ghi log cho từng bước con vào etl.pipeline_run_detail.
+    """
+    started_at = started_at or datetime.utcnow()
+    finished_at = finished_at or datetime.utcnow()
+    err = 'NULL'
+    if error:
+        err = "'" + str(error).replace("'", "''")[:900] + "'"
+
+    sql = f"""
+        IF OBJECT_ID('etl.pipeline_run_detail', 'U') IS NOT NULL
+        INSERT INTO etl.pipeline_run_detail
+        (run_id, step_name, table_name, rows_inserted, rows_updated, rows_deleted, rows_rejected, status, error_message, started_at, finished_at)
+        VALUES ({int(run_id)}, '{step_name}', '{table_name}',
+                {rows_inserted}, {rows_updated}, {rows_deleted}, {rows_rejected},
+                '{status}', {err}, '{started_at:%Y-%m-%d %H:%M:%S}', '{finished_at:%Y-%m-%d %H:%M:%S}')
     """
     with get_connection() as loader:
         loader.execute(sql)
