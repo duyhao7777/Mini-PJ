@@ -44,7 +44,9 @@ VALUES
 
 
 def get_connection():
-    config_path = path.join(get_repo_path(), 'io_config.yaml')
+    config_path = path.abspath(path.join(path.dirname(__file__), '..', 'io_config.yaml'))
+    if not path.exists(config_path):
+        config_path = path.join(get_repo_path(), 'io_config.yaml')
     return MSSQL.with_config(ConfigFileLoader(config_path, 'default'))
 
 
@@ -84,40 +86,46 @@ def write_log(batch_id, load_type, status, lset=None, cet=None,
         err = "'" + str(error).replace("'", "''")[:900] + "'"
 
     sql = f"""
+        SET NOCOUNT ON;
         INSERT INTO etl.pipeline_run_log
         (pipeline_name, load_type, batch_id, batch_start, batch_end, status,
          rows_read, rows_loaded, rows_rejected,
          rows_inserted, rows_updated, rows_unchanged, error_message, started_at, finished_at)
+        OUTPUT INSERTED.run_id
         VALUES ('{pipe_name}', '{load_type}', '{batch_id}',
                 {_date_sql(lset)}, {_date_sql(cet)}, '{status}',
                 {rows_read}, {rows_inserted + rows_updated}, {rows_rejected},
                 {rows_inserted}, {rows_updated}, {rows_unchanged}, {err},
                 '{started_at:%Y-%m-%d %H:%M:%S}', '{finished_at:%Y-%m-%d %H:%M:%S}');
-        SELECT SCOPE_IDENTITY() AS run_id;
     """
     run_id = None
     with get_connection() as loader:
         try:
             res = loader.load(sql)
-            if not res.empty and res['run_id'].iloc[0] is not None:
-                run_id = int(res['run_id'].iloc[0])
-        except Exception:
-            # Fallback nếu execute nhiều lệnh không trả recordset
-            loader.execute(f"""
-                INSERT INTO etl.pipeline_run_log
-                (pipeline_name, load_type, batch_id, batch_start, batch_end, status,
-                 rows_read, rows_loaded, rows_rejected,
-                 rows_inserted, rows_updated, rows_unchanged, error_message, started_at, finished_at)
-                VALUES ('{pipe_name}', '{load_type}', '{batch_id}',
-                        {_date_sql(lset)}, {_date_sql(cet)}, '{status}',
-                        {rows_read}, {rows_inserted + rows_updated}, {rows_rejected},
-                        {rows_inserted}, {rows_updated}, {rows_unchanged}, {err},
-                        '{started_at:%Y-%m-%d %H:%M:%S}', '{finished_at:%Y-%m-%d %H:%M:%S}')
-            """)
             loader.commit()
-            id_res = loader.load("SELECT IDENT_CURRENT('etl.pipeline_run_log') AS run_id")
-            if not id_res.empty and id_res['run_id'].iloc[0] is not None:
-                run_id = int(id_res['run_id'].iloc[0])
+            if not res.empty and 'run_id' in res.columns and res['run_id'].iloc[0] is not None:
+                run_id = int(res['run_id'].iloc[0])
+        except Exception as e_output:
+            # Fallback
+            try:
+                loader.execute(f"""
+                    INSERT INTO etl.pipeline_run_log
+                    (pipeline_name, load_type, batch_id, batch_start, batch_end, status,
+                     rows_read, rows_loaded, rows_rejected,
+                     rows_inserted, rows_updated, rows_unchanged, error_message, started_at, finished_at)
+                    VALUES ('{pipe_name}', '{load_type}', '{batch_id}',
+                            {_date_sql(lset)}, {_date_sql(cet)}, '{status}',
+                            {rows_read}, {rows_inserted + rows_updated}, {rows_rejected},
+                            {rows_inserted}, {rows_updated}, {rows_unchanged}, {err},
+                            '{started_at:%Y-%m-%d %H:%M:%S}', '{finished_at:%Y-%m-%d %H:%M:%S}')
+                """)
+                loader.commit()
+                id_res = loader.load("SELECT CAST(IDENT_CURRENT('etl.pipeline_run_log') AS INT) AS run_id")
+                loader.commit()
+                if not id_res.empty and id_res['run_id'].iloc[0] is not None:
+                    run_id = int(id_res['run_id'].iloc[0])
+            except Exception as e_fallback:
+                print(f"Lỗi fallback ghi log: {e_fallback}")
 
         # Ghi đồng thời vào bảng etl.pipeline_run_detail nếu bảng đã tồn tại
         if run_id:

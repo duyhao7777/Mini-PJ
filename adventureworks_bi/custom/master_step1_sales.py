@@ -14,10 +14,10 @@ def master_step1_sales(*args, **kwargs):
         p = Pipeline.get('ingest_sales_incremental')
         p.execute_sync()
         
-        # Lấy thông tin lần chạy gần nhất từ log
+        # Lấy thông tin lần chạy gần nhất từ log (etl.pipeline_run_log không có cột rows_deleted)
         with get_connection() as loader:
             res = loader.load("""
-                SELECT TOP 1 run_id, status, error_message, rows_inserted, rows_updated, rows_deleted, rows_rejected
+                SELECT TOP 1 run_id, status, error_message, rows_inserted, rows_updated, rows_rejected
                 FROM etl.pipeline_run_log
                 WHERE pipeline_name = 'ingest_sales_incremental'
                 ORDER BY run_id DESC

@@ -11,12 +11,12 @@ blocks:
   language: python
   name: read_etl_control
   retry_config: null
-  status: executed
+  status: failed
   timeout: null
   type: data_loader
   upstream_blocks: []
   uuid: read_etl_control
-- all_upstream_blocks_executed: true
+- all_upstream_blocks_executed: false
   color: null
   configuration: {}
   downstream_blocks:
@@ -33,7 +33,7 @@ blocks:
   upstream_blocks:
   - read_etl_control
   uuid: extract_by_window
-- all_upstream_blocks_executed: true
+- all_upstream_blocks_executed: false
   color: null
   configuration: {}
   downstream_blocks:
@@ -50,7 +50,7 @@ blocks:
   upstream_blocks:
   - extract_by_window
   uuid: validate_source_rows
-- all_upstream_blocks_executed: true
+- all_upstream_blocks_executed: false
   color: null
   configuration: {}
   downstream_blocks:
@@ -68,7 +68,7 @@ blocks:
   upstream_blocks:
   - validate_source_rows
   uuid: classify_rows
-- all_upstream_blocks_executed: true
+- all_upstream_blocks_executed: false
   color: null
   configuration: {}
   downstream_blocks:
@@ -85,7 +85,7 @@ blocks:
   upstream_blocks:
   - classify_rows
   uuid: upsert_to_staging
-- all_upstream_blocks_executed: true
+- all_upstream_blocks_executed: false
   color: pink
   configuration: {}
   downstream_blocks: []

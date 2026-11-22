@@ -48,6 +48,14 @@ def build_ai_prompts(runs, *args, **kwargs):
                       + json.dumps(current, ensure_ascii=False, default=str)
                       + '\n\nCÁC LẦN CHẠY TRƯỚC (mới nhất trước, có thể rỗng):\n'
                       + json.dumps(history, ensure_ascii=False, default=str))
-            rows.append({'run_id': int(r['run_id']), 'prompt': prompt})
+            rows.append({
+                'run_id': int(r['run_id']),
+                'prompt': prompt,
+                'status': r.get('status'),
+                'load_type': r.get('load_type'),
+                'rows_inserted': r.get('rows_inserted'),
+                'rows_updated': r.get('rows_updated'),
+                'error_message': r.get('error_message')
+            })
     print(f'Đã tạo {len(rows)} prompt')
     return pd.DataFrame(rows)
