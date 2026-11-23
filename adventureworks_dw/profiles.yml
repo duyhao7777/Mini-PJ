@@ -4,7 +4,7 @@
        dev:
          type: sqlserver
          driver: 'ODBC Driver 18 for SQL Server'
-         server: localhost
+         server: "{{ env_var('DBT_SERVER', 'localhost') }}"
          port: 1433
          database: BI_AdventureWorks
          schema: dw

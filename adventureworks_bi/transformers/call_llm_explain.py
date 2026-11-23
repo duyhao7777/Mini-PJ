@@ -17,7 +17,7 @@ def call_llm_explain(prompts, *args, **kwargs):
         model = get_model_name()
     except Exception:
         pass
-    model = model or 'gemini-1.5-flash'
+    model = model or 'gemini-3.5-flash-lite'
 
     for r in prompts.to_dict('records'):
         try:

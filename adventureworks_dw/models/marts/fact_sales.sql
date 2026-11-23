@@ -1,6 +1,6 @@
    select
        concat(s.order_number, '-', s.order_line_item)             as sales_line_id,
-       cast(format(s.order_date, 'yyyyMMdd') as int)              as order_date_key,
+       cast(convert(varchar(8), s.order_date, 112) as int)              as order_date_key,
        s.stock_date,
        s.product_key,
        s.customer_key,

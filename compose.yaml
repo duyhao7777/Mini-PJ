@@ -1,27 +1,49 @@
 services:
   sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
+    image: mcr.microsoft.com/azure-sql-edge
     container_name: sqlserver
     restart: unless-stopped
     environment:
       ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "${MSSQL_PASSWORD:-YourStrongPassword123!}"
+      MSSQL_SA_PASSWORD: "${MSSQL_PASSWORD:?MSSQL_PASSWORD is required}"
     ports:
       - "1433:1433"
     volumes:
       - sqlserver_data:/var/opt/mssql
 
   mage:
-    image: mageai/mageai:latest
+    image: mageai/mageai:0.9.79
     container_name: mage
     restart: unless-stopped
     command: /app/run_app.sh mage start adventureworks_bi
     environment:
-      MSSQL_PASSWORD: "${MSSQL_PASSWORD:-YourStrongPassword123!}"
+      MSSQL_PASSWORD: "${MSSQL_PASSWORD:?MSSQL_PASSWORD is required}"
       MAGE_TIMEZONE: "Asia/Ho_Chi_Minh"
       TZ: "Asia/Ho_Chi_Minh"
+      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
+      GEMINI_MODEL: "${GEMINI_MODEL:-gemini-3.5-flash-lite}"
     ports:
       - "6789:6789"
+    volumes:
+      - .:/home/src
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - sqlserver
+
+  qa:
+    build: ./app
+    container_name: qa
+    restart: unless-stopped
+    environment:
+      MSSQL_HOST: host.docker.internal
+      MSSQL_PASSWORD: "${MSSQL_PASSWORD:?MSSQL_PASSWORD is required}"
+      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
+      GEMINI_MODEL: "${GEMINI_MODEL:-gemini-3.5-flash-lite}"
+      DBT_SERVER: host.docker.internal
+      DBT_SA_PASSWORD: "${MSSQL_PASSWORD:?MSSQL_PASSWORD is required}"
+    ports:
+      - "8501:8501"
     volumes:
       - .:/home/src
     extra_hosts:

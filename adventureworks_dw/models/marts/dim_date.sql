@@ -8,14 +8,14 @@
    )
 
    select
-       cast(format(date_day, 'yyyyMMdd') as int)       as date_key,
+       cast(convert(varchar(8), date_day, 112) as int)       as date_key,
        date_day                                        as full_date,
        year(date_day)                                  as year,
        datepart(quarter, date_day)                     as quarter,
        concat(year(date_day), '-Q', datepart(quarter, date_day)) as year_quarter,
        month(date_day)                                 as month_number,
        datename(month, date_day)                       as month_name,
-       format(date_day, 'yyyy-MM')                     as year_month,
+       convert(varchar(7), date_day, 23)                     as year_month,
        day(date_day)                                   as day_of_month,
        day_of_week,
        datename(weekday, date_day)                     as day_name,
