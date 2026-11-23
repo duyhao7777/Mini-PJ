@@ -13,11 +13,20 @@ def master_step3_dbt_test(data, *args, **kwargs):
     run_id = data.get('run_id') if isinstance(data, dict) else None
     print('=== [BƯỚC 3/4] Chạy dbt test (39 bài kiểm thử chất lượng dữ liệu) ===')
 
+    repo_dir = '/home/src'
+    try:
+        from mage_ai.settings.repo import get_repo_path
+        repo_dir = get_repo_path()
+    except Exception:
+        pass
+
     paths_to_try = [
         '/home/src/adventureworks_dw',
-        os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'adventureworks_dw')),
+        os.path.join(repo_dir, 'adventureworks_dw'),
         os.path.abspath('adventureworks_dw')
     ]
+    if '__file__' in globals():
+        paths_to_try.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'adventureworks_dw')))
     dbt_dir = next((p for p in paths_to_try if os.path.exists(p)), None)
     if not dbt_dir:
         raise FileNotFoundError('Không tìm thấy thư mục adventureworks_dw để chạy dbt!')

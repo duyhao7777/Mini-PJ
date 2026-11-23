@@ -13,11 +13,20 @@ def master_step2_dbt_run(data, *args, **kwargs):
     run_id = data.get('run_id') if isinstance(data, dict) else None
     print('=== [BƯỚC 2/4] Chạy dbt run (Tạo Views Staging và Tables Star Schema) ===')
 
+    repo_dir = '/home/src'
+    try:
+        from mage_ai.settings.repo import get_repo_path
+        repo_dir = get_repo_path()
+    except Exception:
+        pass
+
     paths_to_try = [
         '/home/src/adventureworks_dw',
-        os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'adventureworks_dw')),
+        os.path.join(repo_dir, 'adventureworks_dw'),
         os.path.abspath('adventureworks_dw')
     ]
+    if '__file__' in globals():
+        paths_to_try.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'adventureworks_dw')))
     dbt_dir = next((p for p in paths_to_try if os.path.exists(p)), None)
     if not dbt_dir:
         raise FileNotFoundError('Không tìm thấy thư mục adventureworks_dw để chạy dbt!')
@@ -49,9 +58,11 @@ def master_step2_dbt_run(data, *args, **kwargs):
     
     sql_paths = [
         '/home/src/sql/06_build_dw_models.sql',
-        os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'sql', '06_build_dw_models.sql')),
+        os.path.join(repo_dir, 'sql', '06_build_dw_models.sql'),
         os.path.abspath('sql/06_build_dw_models.sql')
     ]
+    if '__file__' in globals():
+        sql_paths.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'sql', '06_build_dw_models.sql')))
     sql_file = next((p for p in sql_paths if os.path.exists(p)), None)
 
     if sql_file:

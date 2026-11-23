@@ -44,9 +44,19 @@ VALUES
 
 
 def get_connection():
-    config_path = path.abspath(path.join(path.dirname(__file__), '..', 'io_config.yaml'))
-    if not path.exists(config_path):
-        config_path = path.join(get_repo_path(), 'io_config.yaml')
+    try:
+        repo_dir = get_repo_path()
+    except Exception:
+        repo_dir = '/home/src'
+
+    paths_to_check = [
+        path.join(repo_dir, 'io_config.yaml'),
+        path.abspath('io_config.yaml'),
+    ]
+    if '__file__' in globals():
+        paths_to_check.append(path.abspath(path.join(path.dirname(__file__), '..', 'io_config.yaml')))
+
+    config_path = next((p for p in paths_to_check if path.exists(p)), path.join(repo_dir, 'io_config.yaml'))
     return MSSQL.with_config(ConfigFileLoader(config_path, 'default'))
 
 
